@@ -1,4 +1,5 @@
-package co.edu.uniquindio.poo.SeguimientoGrafos.GR;
+package com.example;
+
 
 
 import org.ejml.simple.SimpleMatrix;
@@ -51,7 +52,7 @@ public class EG2Cliente {
         // esto se encarga de no repetir caminos, ya que hagarra el recorrido y la fila y reviza que la matriz en fila y columna no tenga un uno para avanzar
         if (matriz.get(0,indiceActual) < valorContenido && recorrido.get(fila, indiceActual) != 1 ) {
             valorContenido = matriz.get(0,indiceActual);
-            return proximoMenorVerticeProximo (matriz, recorrido , valorContenido, indiceActual, indiceActual+1, fila);-
+            return proximoMenorVerticeProximo (matriz, recorrido , valorContenido, indiceActual, indiceActual+1, fila);
     
         }
 
