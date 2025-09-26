@@ -1,4 +1,5 @@
-package co.edu.uniquindio.poo.GR;
+package co.edu.uniquindio.poo.SeguimientoGrafos.GR;
+
 
 import org.ejml.simple.SimpleMatrix;
 
