@@ -40,7 +40,7 @@ public class ConexidadYCaminosS {
     }
 
     public void determinarConexidadM(boolean[][] resultado) {
-        if (isConex(resultado) && isStronglyConnected(resultado)) {
+        if (isConex(resultado) && isStronglyConnected(resultado) && !esDirigido(resultado)) {
             System.out.println("Es Fuertemente conexo");
         } else if (isConex(resultado)) {
             System.out.println("Es conexo");
@@ -166,5 +166,31 @@ public class ConexidadYCaminosS {
             }
             System.out.println();
         }
+    }
+
+    // Determina si la matriz de adyacencia representa un grafo dirigido (no simétrico) para SimpleMatrix
+    public boolean esDirigido(SimpleMatrix grafo) {
+        int n = grafo.getNumRows();
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (grafo.get(i, j) != grafo.get(j, i)) {
+                    return true; // Hay al menos una arista que no es recíproca
+                }
+            }
+        }
+        return false; // Es no dirigido (simétrico)
+    }
+
+    // Sobrecarga: Determina si la matriz de adyacencia representa un grafo dirigido (no simétrico) para boolean[][]
+    public boolean esDirigido(boolean[][] grafo) {
+        int n = grafo.length;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (grafo[i][j] != grafo[j][i]) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
