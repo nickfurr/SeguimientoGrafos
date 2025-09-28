@@ -43,6 +43,24 @@ public class ConexidadYCaminosS {
     int[][] intGrafo = toIntMatrix(grafo);
     int[][] resultadoInt = caminosEnteros(intGrafo, tamañoCamino);
         imprimirMatrizEntera(resultadoInt);
+
+        // Mostrar iteraciones de multiplicaciones en enteros
+        mostrarIteracionesMultiplicacionEntera(intGrafo);
+    }
+    // Muestra las iteraciones de las multiplicaciones de la matriz entera
+    public void mostrarIteracionesMultiplicacionEntera(int[][] matriz) {
+        int n = matriz.length;
+        int[][] potencia = new int[n][n];
+        // Copia matriz
+        for (int i = 0; i < n; i++)
+            System.arraycopy(matriz[i], 0, potencia[i], 0, n);
+        System.out.println("Iteración 1 (A):");
+        imprimirMatrizEntera(potencia);
+        for (int k = 2; k <= n; k++) {
+            potencia = multEntera(potencia, matriz);
+            System.out.println("Iteración " + k + " (A^" + k + "):");
+            imprimirMatrizEntera(potencia);
+        }
     }
     // Convierte SimpleMatrix a matriz de enteros
     public int[][] toIntMatrix(SimpleMatrix grafo) {
