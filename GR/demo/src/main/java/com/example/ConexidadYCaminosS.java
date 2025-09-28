@@ -37,6 +37,103 @@ public class ConexidadYCaminosS {
         boolean[][] boolGrafo = toBooleanMatrix(grafo);
         boolean[][] resultado = caminosBooleanos(boolGrafo, tamañoCamino, 0);
         determinarConexidadM(resultado);
+
+        // Mostrar resultado en enteros (sumas y multiplicaciones)
+        System.out.println("\nResultado en enteros (sumas y multiplicaciones):");
+    int[][] intGrafo = toIntMatrix(grafo);
+    int[][] resultadoInt = caminosEnteros(intGrafo, tamañoCamino);
+        imprimirMatrizEntera(resultadoInt);
+    }
+    // Convierte SimpleMatrix a matriz de enteros
+    public int[][] toIntMatrix(SimpleMatrix grafo) {
+        int n = grafo.getNumRows();
+        int[][] mat = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                mat[i][j] = (int) grafo.get(i, j);
+            }
+        }
+        return mat;
+    }
+
+    // Calcula la matriz de caminos de longitud <= tamañoCamino usando sumas y multiplicaciones
+    public int[][] caminosEnteros(int[][] matrizA, int tamañoCamino) {
+        int n = matrizA.length;
+        int[][] suma = new int[n][n];
+        int[][] potencia = new int[n][n];
+        // Inicializa potencia como matrizA
+        for (int i = 0; i < n; i++)
+            System.arraycopy(matrizA[i], 0, potencia[i], 0, n);
+        // Suma A^1 hasta A^tamañoCamino
+        for (int k = 1; k <= tamañoCamino; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    suma[i][j] += potencia[i][j];
+                }
+            }
+            potencia = multEntera(potencia, matrizA);
+        }
+        return suma;
+    }
+
+    // Suma de dos matrices de enteros
+    public int[][] sumaEntera(int[][] a, int[][] b) {
+        int n = a.length;
+        int[][] res = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                res[i][j] = a[i][j] + b[i][j];
+            }
+        }
+        return res;
+    }
+
+    // Multiplicación de matrices de enteros
+    public int[][] multEntera(int[][] a, int[][] b) {
+        int n = a.length;
+        int[][] res = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int val = 0;
+                for (int k = 0; k < n; k++) {
+                    val += a[i][k] * b[k][j];
+                }
+                res[i][j] = val;
+            }
+        }
+        return res;
+    }
+
+    // Elevación recursiva entera
+    public int[][] elevacionREntera(int[][] matriz, int numeroDeVeces, int actual) {
+        if (numeroDeVeces == actual) {
+            return matriz;
+        }
+        return multEntera(matriz, elevacionREntera(matriz, numeroDeVeces, actual + 1));
+    }
+
+    // Elevación entera iterativa
+    public int[][] elevacionEntera(int[][] matriz, int numeroDeVeces) {
+        int n = matriz.length;
+        int[][] devolver = new int[n][n];
+        // Copia matriz
+        for (int i = 0; i < n; i++)
+            System.arraycopy(matriz[i], 0, devolver[i], 0, n);
+        for (int i = 1; i < numeroDeVeces; i++) {
+            devolver = multEntera(devolver, matriz);
+        }
+        return devolver;
+    }
+
+    // Imprime una matriz de enteros
+    public void imprimirMatrizEntera(int[][] matriz) {
+        int n = matriz.length;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                System.out.print(matriz[i][j] + " ");
+            }
+            System.out.println();
+        }
     }
 
     public void determinarConexidadM(boolean[][] resultado) {
