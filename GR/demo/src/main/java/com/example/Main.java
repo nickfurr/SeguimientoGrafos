@@ -1,13 +1,16 @@
 package com.example;
 
+import org.ejml.simple.SimpleMatrix;
 
 public class Main {
     public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            GrafoView view = new GrafoView();
-            ConexidadYCaminosS modelo = new ConexidadYCaminosS();
-            new GrafoController(view, modelo);
-            view.setVisible(true);
-        });
+        System.out.println("=== Análisis de Conexidad y Caminos en Grafos ===");
+        System.out.println("Ingrese la matriz de adyacencia (0/1 para aristas).");
+        // Controller: Leer matriz desde terminal
+        SimpleMatrix grafo = MatrixInput.leerMatrizDesdeTerminal();
+        // Model: Crear instancia y analizar
+        ConexidadYCaminosS analizador = new ConexidadYCaminosS();
+        analizador.determinarConexidad(grafo);
+
     }
 }

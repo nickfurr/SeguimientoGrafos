@@ -1,12 +1,10 @@
 package com.example;
 
-
-
 import org.ejml.simple.SimpleMatrix;
 
 public class ConexidadYCaminosS {
 
-    // Convierte una matriz de adyacencia numérica a booleana
+    // Convierte SimpleMatrix a booleana (adyacencia !=0 es true)
     public boolean[][] toBooleanMatrix(SimpleMatrix grafo) {
         int n = grafo.getNumRows();
         boolean[][] boolMat = new boolean[n][n];
@@ -18,7 +16,7 @@ public class ConexidadYCaminosS {
         return boolMat;
     }
 
-    // Convierte una matriz booleana a SimpleMatrix (0/1)
+    // Convierte booleana a SimpleMatrix (true=1, false=0) para impresión
     public SimpleMatrix toSimpleMatrix(boolean[][] boolMat) {
         int n = boolMat.length;
         SimpleMatrix mat = new SimpleMatrix(n, n);
@@ -30,196 +28,138 @@ public class ConexidadYCaminosS {
         return mat;
     }
 
-    public void determinarConexidad(SimpleMatrix grafo, int tamañoCamino) {
-        // Mostrar las iteraciones de las multiplicaciones
-        mostrarIteracionesMultiplicacion(grafo);
+    // Método principal: determina si es dirigido/no dirigido, muestra multiplicaciones y conexidad
+    public void determinarConexidad(SimpleMatrix grafo) {
+        boolean[][] matrizOriginal = toBooleanMatrix(grafo);
+        int n = matrizOriginal.length;
 
-        boolean[][] boolGrafo = toBooleanMatrix(grafo);
-        boolean[][] resultado = caminosBooleanos(boolGrafo, tamañoCamino, 0);
-        determinarConexidadM(resultado);
+        // 1. Mostrar si es dirigido o no
+        boolean esDirigidoGrafo = esDirigido(matrizOriginal);
+        System.out.println("¿Es grafo dirigido? " + (esDirigidoGrafo ? "SÍ" : "NO"));
+        System.out.println();
 
-        // Mostrar resultado en enteros (sumas y multiplicaciones)
-        System.out.println("\nResultado en enteros (sumas y multiplicaciones):");
-    int[][] intGrafo = toIntMatrix(grafo);
-    int[][] resultadoInt = caminosEnteros(intGrafo, tamañoCamino);
-        imprimirMatrizEntera(resultadoInt);
+        // 2. Mostrar iteraciones de multiplicaciones del grafo original
+        mostrarIteracionBk(matrizOriginal, "original");
 
-        // Mostrar iteraciones de multiplicaciones en enteros
-        mostrarIteracionesMultiplicacionEntera(intGrafo);
-    }
-    // Muestra las iteraciones de las multiplicaciones de la matriz entera
-    public void mostrarIteracionesMultiplicacionEntera(int[][] matriz) {
-        int n = matriz.length;
-        int[][] potencia = new int[n][n];
-        // Copia matriz
-        for (int i = 0; i < n; i++)
-            System.arraycopy(matriz[i], 0, potencia[i], 0, n);
-        System.out.println("Iteración 1 (A):");
-        imprimirMatrizEntera(potencia);
-        for (int k = 2; k <= n; k++) {
-            potencia = multEntera(potencia, matriz);
-            System.out.println("Iteración " + k + " (A^" + k + "):");
-            imprimirMatrizEntera(potencia);
-        }
-    }
-    // Convierte SimpleMatrix a matriz de enteros
-    public int[][] toIntMatrix(SimpleMatrix grafo) {
-        int n = grafo.getNumRows();
-        int[][] mat = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                mat[i][j] = (int) grafo.get(i, j);
+        // 3. Calcular cierre transitivo del original
+        boolean[][] cierreOriginal = calculoBk(matrizOriginal, n);
+
+        System.out.println("\nBk del grafo original:");
+        imprimirMatrizBooleana(cierreOriginal);
+
+        boolean necesitaTransformacion = false;
+        if (!esDirigidoGrafo) {
+            // No dirigido: verificar conexo
+            boolean esConexo = isConexo(cierreOriginal);
+            System.out.println(esConexo ? "El grafo es CONEXO." : "El grafo NO es conexo.");
+        } else {
+            // Dirigido: verificar fuertemente conexo
+            boolean esFuertementeConexo = isFuertementeConexo(cierreOriginal);
+            if (esFuertementeConexo) {
+                System.out.println("El grafo es FUERTEMENTE CONEXO.");
+            } else {
+                System.out.println("El grafo NO es fuertemente conexo.");
+                // Transformar a undirected (grafo simple) y verificar conexidad
+                necesitaTransformacion = true;
+                boolean[][] matrizUndirected = orConTranspuesta(matrizOriginal);
+                System.out.println("\n--- Transformación a grafo simple (no dirigido) ---");
+                System.out.println("Matriz de grafo no dirigido:");
+                imprimirMatrizBooleana(matrizUndirected);
+
+                // Mostrar multiplicaciones de la versión undirected
+                mostrarIteracionBk(matrizUndirected, "no dirigido");
+
+                // Calcular cierre de la versión undirected
+                boolean[][] cierreUndirected = calculoBk(matrizUndirected, n);
+                System.out.println("\nBk:");
+                imprimirMatrizBooleana(cierreUndirected);
+
+                // Verificar si es conexo como undirected
+                boolean esConexoUndirected = isConexo(cierreUndirected);
+                System.out.println(esConexoUndirected ? "Como grafo simple, es CONEXO." : "Como grafo simple, NO es conexo.");
             }
         }
-        return mat;
+
+        // Imprimir matriz final como SimpleMatrix (la relevante)
+        System.out.println("\nMatriz final (0/1):");
+        boolean[][] cierreFinal = necesitaTransformacion ? cierreOriginal : cierreOriginal;  // Siempre el original por defecto, o ajusta si quieres el undirected
+        toSimpleMatrix(cierreFinal).print();
     }
 
-    // Calcula la matriz de caminos de longitud <= tamañoCamino usando sumas y multiplicaciones
-    public int[][] caminosEnteros(int[][] matrizA, int tamañoCamino) {
-        int n = matrizA.length;
-        int[][] suma = new int[n][n];
-        int[][] potencia = new int[n][n];
-        // Inicializa potencia como matrizA
-        for (int i = 0; i < n; i++)
-            System.arraycopy(matrizA[i], 0, potencia[i], 0, n);
-        // Suma A^1 hasta A^tamañoCamino
-        for (int k = 1; k <= tamañoCamino; k++) {
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    suma[i][j] += potencia[i][j];
-                }
-            }
-            potencia = multEntera(potencia, matrizA);
-        }
-        return suma;
-    }
-
-    // Suma de dos matrices de enteros
-    public int[][] sumaEntera(int[][] a, int[][] b) {
-        int n = a.length;
-        int[][] res = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                res[i][j] = a[i][j] + b[i][j];
-            }
-        }
-        return res;
-    }
-
-    // Multiplicación de matrices de enteros
-    public int[][] multEntera(int[][] a, int[][] b) {
-        int n = a.length;
-        int[][] res = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                int val = 0;
-                for (int k = 0; k < n; k++) {
-                    val += a[i][k] * b[k][j];
-                }
-                res[i][j] = val;
-            }
-        }
-        return res;
-    }
-
-    // Elevación recursiva entera
-    public int[][] elevacionREntera(int[][] matriz, int numeroDeVeces, int actual) {
-        if (numeroDeVeces == actual) {
-            return matriz;
-        }
-        return multEntera(matriz, elevacionREntera(matriz, numeroDeVeces, actual + 1));
-    }
-
-    // Elevación entera iterativa
-    public int[][] elevacionEntera(int[][] matriz, int numeroDeVeces) {
-        int n = matriz.length;
-        int[][] devolver = new int[n][n];
-        // Copia matriz
-        for (int i = 0; i < n; i++)
-            System.arraycopy(matriz[i], 0, devolver[i], 0, n);
-        for (int i = 1; i < numeroDeVeces; i++) {
-            devolver = multEntera(devolver, matriz);
-        }
-        return devolver;
-    }
-
-    // Imprime una matriz de enteros
-    public void imprimirMatrizEntera(int[][] matriz) {
-        int n = matriz.length;
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                System.out.print(matriz[i][j] + " ");
-            }
-            System.out.println();
-        }
-    }
-
-    public void determinarConexidadM(boolean[][] resultado) {
-        if (isConex(resultado) && isStronglyConnected(resultado) && !esDirigido(resultado)) {
-            System.out.println("Es Fuertemente conexo");
-        } else if (isConex(resultado)) {
-            System.out.println("Es conexo");
-        }else {
-            System.out.println("No es conexo ni fuertemente conexo");
-        }
-        // Imprime la matriz booleana como 0/1
-        SimpleMatrix mat = toSimpleMatrix(resultado);
-        mat.print();
-    }
-
-    private boolean isStronglyConnected(boolean[][] resultado) {
-        for (int i = 0; i < resultado.length; i++) {
-            for (int j = 0; j < resultado.length; j++) {
-                if (i != j && !resultado[i][j]) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    public boolean isConex(boolean[][] grafo) {
+    // Verifica si es dirigido (no simétrico)
+    public boolean esDirigido(boolean[][] grafo) {
         int n = grafo.length;
         for (int i = 0; i < n; i++) {
-            boolean filaConexa = false;
             for (int j = 0; j < n; j++) {
-                if (grafo[i][j]) {
-                    filaConexa = true;
-                    break;
+                if (grafo[i][j] != grafo[j][i]) {
+                    return true;
                 }
             }
-            if (!filaConexa) {
-                return false;
-            }
         }
-        return true;
+        return false;
     }
 
-    // Calcula la matriz de caminos de longitud <= tamañoCamino usando lógica booleana
-    public boolean[][] caminosBooleanos(boolean[][] matrizA, int tamañoCamino, int actual) {
-        if (tamañoCamino == actual) {
-            return elevacionBooleana(matrizA, actual);
+    // OR lógico entre matriz y su transpuesta (convierte digrafo a undirected)
+    public boolean[][] orConTranspuesta(boolean[][] A) {
+        if (A == null || A.length == 0) {
+            return null;
         }
-        boolean[][] suma = sumaBooleana(
-            elevacionRBooleana(matrizA, actual, 0),
-            caminosBooleanos(matrizA, tamañoCamino, actual + 1)
-        );
-        return suma;
-    }
-
-    // Suma lógica OR de dos matrices booleanas
-    public boolean[][] sumaBooleana(boolean[][] a, boolean[][] b) {
-        int n = a.length;
-        boolean[][] res = new boolean[n][n];
+        int n = A.length;
+        // Calcular transpuesta
+        boolean[][] transpuesta = new boolean[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                res[i][j] = a[i][j] || b[i][j];
+                transpuesta[i][j] = A[j][i];
             }
         }
-        return res;
+        // OR elemento a elemento
+        boolean[][] undirected = new boolean[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                undirected[i][j] = A[i][j] || transpuesta[i][j];
+            }
+        }
+        return undirected;
     }
 
-    // Multiplicación lógica AND-OR de matrices booleanas
+    // Muestra iteraciones de potencias booleanas (multiplicaciones AND-OR)
+    public void mostrarIteracionBk(boolean[][] matriz, String tipo) {
+        int n = matriz.length;
+        System.out.println("Iteraciones de multiplicaciones (" + tipo + "):");
+
+        boolean[][] potencia = new boolean[n][n];
+        // Copia inicial: A^1 = A
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(matriz[i], 0, potencia[i], 0, n);
+        }
+        System.out.println("Iteración 1 (A^1):");
+        imprimirMatrizBooleana(potencia);
+
+        for (int k = 2; k <= n; k++) {
+            potencia = multBooleana(potencia, matriz);
+            System.out.println("Iteración " + k + " (A^" + k + "):");
+            imprimirMatrizBooleana(potencia);
+        }
+        System.out.println();
+    }
+
+    // Calcula cierre transitivo: OR acumulativo de A^1 | A^2 | ... | A^n
+    public boolean[][] calculoBk(boolean[][] matriz, int n) {
+        boolean[][] cierre = new boolean[n][n];
+        boolean[][] potencia = new boolean[n][n];
+        // Inicializar con A^1
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(matriz[i], 0, potencia[i], 0, n);
+            System.arraycopy(matriz[i], 0, cierre[i], 0, n);
+        }
+        for (int k = 2; k <= n; k++) {
+            potencia = multBooleana(potencia, matriz);
+            cierre = sumaBooleana(cierre, potencia);  // OR acumulativo
+        }
+        return cierre;
+    }
+
+    // Multiplicación booleana (AND-OR para caminos de longitud exacta)
     public boolean[][] multBooleana(boolean[][] a, boolean[][] b) {
         int n = a.length;
         boolean[][] res = new boolean[n][n];
@@ -235,77 +175,44 @@ public class ConexidadYCaminosS {
         return res;
     }
 
-    // Elevación recursiva booleana
-    public boolean[][] elevacionRBooleana(boolean[][] matriz, int numeroDeVeces, int actual) {
-        if (numeroDeVeces == actual) {
-            return matriz;
+    // Suma booleana (OR para unión de caminos)
+    public boolean[][] sumaBooleana(boolean[][] a, boolean[][] b) {
+        int n = a.length;
+        boolean[][] res = new boolean[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                res[i][j] = a[i][j] || b[i][j];
+            }
         }
-        return multBooleana(matriz, elevacionRBooleana(matriz, numeroDeVeces, actual + 1));
+        return res;
     }
 
-    // Elevación booleana iterativa
-    public boolean[][] elevacionBooleana(boolean[][] matriz, int numeroDeVeces) {
-        int n = matriz.length;
-        boolean[][] devolver = new boolean[n][n];
-        // Copia matriz
-        for (int i = 0; i < n; i++)
-            System.arraycopy(matriz[i], 0, devolver[i], 0, n);
-        for (int i = 0; i < numeroDeVeces; i++) {
-            devolver = multBooleana(devolver, devolver);
+    // Verifica si es conexo: todos los pares i≠j tienen camino (en cierre transitivo)
+    public boolean isConexo(boolean[][] cierre) {
+        int n = cierre.length;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i != j && !cierre[i][j]) {
+                    return false;
+                }
+            }
         }
-        return devolver;
+        return true;
     }
 
-    // Muestra las iteraciones de las multiplicaciones de la matriz
-    public void mostrarIteracionesMultiplicacion(SimpleMatrix grafo) {
-        int n = grafo.getNumRows();
-        boolean[][] matriz = toBooleanMatrix(grafo);
-
-        System.out.println("Iteración 1 (A):");
-        imprimirMatrizBooleana(matriz);
-
-        boolean[][] potencia = matriz;
-        for (int k = 2; k <= n; k++) {
-            potencia = multBooleana(potencia, matriz);
-            System.out.println("Iteración " + k + " (A^" + k + "):");
-            imprimirMatrizBooleana(potencia);
-        }
+    // Verifica si es fuertemente conexo: hay caminos i->j y j->i para todos i≠j (todos off-diagonal true en cierre)
+    public boolean isFuertementeConexo(boolean[][] cierre) {
+        return isConexo(cierre);  // En cierre transitivo dirigido, equivale a todos los pares conectados en ambas direcciones
     }
 
-    // Imprime una matriz booleana como 0/1
+    // Imprime matriz booleana como 0/1
     public void imprimirMatrizBooleana(boolean[][] matriz) {
         int n = matriz.length;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                System.out.print(matriz[i][j] ? "1 " : "0 ");
+                System.out.print((matriz[i][j] ? "1" : "0") + " ");
             }
             System.out.println();
         }
-    }
-
-    // Determina si la matriz de adyacencia representa un grafo dirigido (no simétrico) para SimpleMatrix
-    public boolean esDirigido(SimpleMatrix grafo) {
-        int n = grafo.getNumRows();
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (grafo.get(i, j) != grafo.get(j, i)) {
-                    return true; // Hay al menos una arista que no es recíproca
-                }
-            }
-        }
-        return false; // Es no dirigido (simétrico)
-    }
-
-    // Sobrecarga: Determina si la matriz de adyacencia representa un grafo dirigido (no simétrico) para boolean[][]
-    public boolean esDirigido(boolean[][] grafo) {
-        int n = grafo.length;
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                if (grafo[i][j] != grafo[j][i]) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }
